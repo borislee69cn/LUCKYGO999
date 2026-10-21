@@ -807,9 +807,11 @@ body.busy #start[disabled]:not(.claim):not(.zannen){display:none!important}
 #logoLayer{position:absolute;left:12px;right:12px;top:32px;bottom:110px;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:0;opacity:0;visibility:hidden;transition:opacity .45s ease,visibility 0s .45s}
 #logoLayer.show{opacity:1;visibility:visible;transition:opacity .35s ease,visibility 0s}
 /* v36.43：中獎跑馬燈 — 位於中央區上緣（頂列獎格下方、LOGO 上方），由右至左連續捲動；暱稱／獎項／數字三色區分；訊息間距＝捲速×2 秒；JP 點點樂全版模式時隱藏 */
-#ticker{position:absolute;top:14px;left:21.92%;right:21.92%;height:28px;   /* v36.49：框下移 6px（top 8 → 14）；v36.52：寬度再縮 20%（70.2% → 56.16%，兩側內縮 14.9% → 21.92%） */   /* v36.48：寬度縮減 10%（78% → 70.2%，兩側內縮 11% → 14.9%） */z-index:2;overflow:hidden;border-radius:14px;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.14);box-shadow:0 2px 8px rgba(0,0,0,.35) inset;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .25s ease,visibility 0s .25s;   /* v36.46：不常駐 — 有訊息捲動時才顯示，跑完即隱藏 */
+/* v36.55：手機可讀性 — 字級／框高改由變數 --tkF／--tkH 控制（由 fit() 依縮放比 sc 計算，見 TICKER.fMinPx）；桌機維持原稿 16.5px／28px。
+   框底緣固定於 top 42px（＝原 top 14 + 高 28），框只往上長，不壓到 LOGO */
+#ticker{position:absolute;top:calc(42px - var(--tkH,28px));left:21.92%;right:21.92%;height:var(--tkH,28px);   /* v36.49：框下移 6px（top 8 → 14）；v36.52：寬度再縮 20%（70.2% → 56.16%，兩側內縮 14.9% → 21.92%） */   /* v36.48：寬度縮減 10%（78% → 70.2%，兩側內縮 11% → 14.9%） */z-index:2;overflow:hidden;border-radius:calc(var(--tkH,28px) / 2);background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.14);box-shadow:0 2px 8px rgba(0,0,0,.35) inset;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .25s ease,visibility 0s .25s;   /* v36.46：不常駐 — 有訊息捲動時才顯示，跑完即隱藏 */
   -webkit-mask-image:linear-gradient(90deg,transparent,#000 22px,#000 calc(100% - 22px),transparent);mask-image:linear-gradient(90deg,transparent,#000 22px,#000 calc(100% - 22px),transparent)}
-#ticker .trk{position:absolute;left:0;top:0;height:28px;display:flex;align-items:center;line-height:1;padding-bottom:1px;box-sizing:border-box;white-space:nowrap;font-size:16.5px;   /* v36.49：字體放大 10%（15 → 16.5px）；v36.53：改 flex 垂直置中（line-height 1），並上提 0.5px 修正中文字體偏下 */font-weight:700;letter-spacing:.04em;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9);will-change:transform;transform:translateX(var(--w,900px))}
+#ticker .trk{position:absolute;left:0;top:0;height:var(--tkH,28px);display:flex;align-items:center;line-height:1;padding-bottom:1px;box-sizing:border-box;white-space:nowrap;font-size:var(--tkF,16.5px);   /* v36.49：字體放大 10%（15 → 16.5px）；v36.53：改 flex 垂直置中（line-height 1），並上提 0.5px 修正中文字體偏下；v36.55：改用變數（桌機仍為 16.5px） */font-weight:700;letter-spacing:.04em;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9);will-change:transform;transform:translateX(var(--w,900px))}
 #ticker.on{opacity:1;visibility:visible;transition:opacity .2s ease,visibility 0s}   /* v36.46：有訊息時顯示框 */
 #ticker.hold{opacity:0!important;visibility:hidden!important;transition:none!important}   /* v36.54：命運／機會／JP 進行中暫停並隱藏，回到報獎畫面再接續 */
 #ticker .trk.run{animation:tickerRun var(--dur,10s) linear forwards}   /* v36.45：一次一則，單次播放；跑完（animationend）停 2 秒再接下一則 */
@@ -2267,6 +2269,9 @@ const upgradable=line=>openCells(line).filter(p=>line.lv[p]<CFG.ladder.length-1)
    每輪隨機產生 50 則「恭喜玩家[暱稱]啟動LUCKY GO獲獎[獎項]金額星幣!」，暱稱 ≤5 中文字、獎項僅特殊燈／卡片／JP（一般獎格與鎖定不上跑馬燈）；
    v36.45：一次只跑一則，由右進、左出，整則離開後停 gapSec（2 秒）再接下一則；50 則播完重新抽一批。捲速 TICKER.speed px/s */
 const TICKER={speed:100, gapSec:2, n:50, jpRate:.10,
+  /* v36.55：手機字級保底 — 設計字級＝clamp(fBase, fMinPx ÷ 縮放比, fMax)，框高等比 hBase×字級÷fBase（只往上長）；
+     縮放比 ≥ fMinPx/fBase（≈0.73，桌機／平板）時維持原稿；手機橫向放大到畫面實際約 12px，上限 21px 避免頂到頂列獎格 */
+  fBase:16.5, hBase:28, fMinPx:12, fMax:21,
   names:['天天好心情','薯條加大','豬血糕','今天不回家','我是超人','頭又大','珍奶去冰','夜貓子','不想上班','發財貓','幸運星','鹹酥雞','滷肉飯','雞排不切','老司機','一路發','招財進寶','月光族','熬夜冠軍','魚丸湯','小籠包','蔥油餅','牛肉麵','豆花加糖','阿嬤的孫','隔壁老王','木瓜牛奶','綠豆沙','冬瓜茶','芒果冰','刈包','臭豆腐','甜不辣','蚵仔煎','棺材板','胡椒餅','鳳梨酥','太陽餅','地瓜球','燒仙草','波霸奶茶','草莓塔','布丁狗','柴犬','橘貓','阿財','土豪金','歐北來','隨便啦','躺平中','爆米花','佛系玩家','一夜致富','睡不著','吃貨','美式去冰','全糖少冰','下班了','中大獎','鹹魚翻身','小確幸','財神到','發發發','阿嬤我出運','真香','哈哈哈','皮卡皮','手氣王','冰火菠蘿','黑糖珍珠','肉鬆蛋餅','起司蛋餅','貢丸','阿伯','吉娃娃','麥香紅茶','紅豆餅','芋頭控','大吉大利'],
   prizes:['乘倍獎','升級獎','雙線獎','加成獎','命運獎','機會獎']};
 (function(){ const box=$('#ticker'), trk=box&&box.querySelector('.trk'); if(!trk) return;
@@ -2287,9 +2292,18 @@ const TICKER={speed:100, gapSec:2, n:50, jpRate:.10,
     if(paused) return;   // v36.54：暫停中不起播
     if(!queue.length) queue=batch();
     trk.classList.remove('run'); trk.innerHTML=queue.shift();
-    const w=box.clientWidth, tw=trk.scrollWidth;
-    trk.style.setProperty('--w',w+'px'); trk.style.setProperty('--tw',tw+'px'); trk.style.setProperty('--dur',((w+tw)/TICKER.speed).toFixed(2)+'s');
+    measure();
     void trk.offsetWidth; trk.classList.add('run'); box.classList.add('on'); }   // v36.46：開始捲動時才顯示框
+  function measure(){   // 依目前字級量測框寬／訊息寬，設定起訖位置與捲動時間（捲速固定 px/s）
+    const w=box.clientWidth, tw=trk.scrollWidth;
+    trk.style.setProperty('--w',w+'px'); trk.style.setProperty('--tw',tw+'px'); trk.style.setProperty('--dur',((w+tw)/TICKER.speed).toFixed(2)+'s'); }
+  /* v36.55：由 fit() 傳入縮放比 sc，計算手機字級保底；字級有變且訊息正在捲動時（首次載入、旋轉螢幕），以新寬度重新量測並從右緣重跑該則，避免尾字殘留 */
+  let curF=TICKER.fBase;
+  window.tickerFit=function(sc){
+    const f=Math.min(TICKER.fMax,Math.max(TICKER.fBase,TICKER.fMinPx/Math.max(sc,.01)));
+    if(Math.abs(f-curF)<.05) return; curF=f;
+    box.style.setProperty('--tkF',f.toFixed(2)+'px'); box.style.setProperty('--tkH',(TICKER.hBase*f/TICKER.fBase).toFixed(2)+'px');
+    if(trk.classList.contains('run')){ trk.classList.remove('run'); measure(); void trk.offsetWidth; trk.classList.add('run'); } };
   trk.addEventListener('animationend',()=>{ trk.classList.remove('run'); trk.innerHTML=''; box.classList.remove('on'); clearTimeout(timer); gapStart=Date.now(); timer=setTimeout(play,TICKER.gapSec*1000); });   // 跑完即隱藏框，停 2 秒再接下一則
   /* v36.54：命運／機會／JP 期間暫停 — 進行中的訊息凍結（animation-play-state）並隱藏框、等待中的 2 秒計時取消；
      回到報獎畫面後：有凍結的訊息就從原位接續捲動，沒有則補足剩餘空檔再接下一則 */
@@ -3235,6 +3249,7 @@ function fit(){
   const sc=Math.min(availW/SW,availH/SH);
   const x=inL+(availW-SW*sc)/2+(vv?vv.offsetLeft:0), y=inT+(availH-SH*sc)/2+(vv?vv.offsetTop:0);
   const st=$('#stage'); st.style.transform=`translate(${x}px,${y}px) scale(${sc})`;
+  if(window.tickerFit) window.tickerFit(sc);   // v36.55：跑馬燈手機字級保底
   const portrait=vh>vw && matchMedia('(pointer:coarse)').matches; document.body.classList.toggle('portrait',portrait);
   fitIntro(availW,availH,sc);
 }
